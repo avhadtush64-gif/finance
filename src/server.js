@@ -9,8 +9,13 @@ const db = require('./config/db');
 const cors = require('cors');
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  credentials: true
+  origin: [
+    'https://finance-1-fg8u.onrender.com',  // your frontend URL
+    'http://localhost:3000'                   // local dev
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 async function start() {
   // Verify DB connection
