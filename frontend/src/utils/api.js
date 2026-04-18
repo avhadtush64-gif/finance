@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'https://finance-a6j5.onrender.com';
+
 export async function fetchApi(endpoint, options = {}) {
   const token = localStorage.getItem('accessToken');
   
@@ -17,7 +18,7 @@ export async function fetchApi(endpoint, options = {}) {
   }
 
   try {
-    let response = await fetch(`/api${endpoint}`, {
+    let response = await fetch(`${BASE_URL}/api${endpoint}`, {
       ...options,
       headers
     });
@@ -26,7 +27,7 @@ export async function fetchApi(endpoint, options = {}) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
         headers['Authorization'] = `Bearer ${localStorage.getItem('accessToken')}`;
-        response = await fetch(`/api${endpoint}`, { ...options, headers });
+        response = await fetch(`${BASE_URL}/api${endpoint}`, { ...options, headers });
       } else {
         localStorage.removeItem('accessToken');
         window.location.href = '/login';
@@ -48,7 +49,6 @@ export async function fetchApi(endpoint, options = {}) {
 
 async function refreshAccessToken() {
   try {
-    const BASE_URL = import.meta.env.VITE_API_URL || 'https://finance-a6j5.onrender.com';
     const response = await fetch(`${BASE_URL}/api/auth/refresh`, { method: 'POST' });
     const data = await response.json();
     if (data.success && data.data.accessToken) {
