@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://finance-a6j5.onrender.com';
 export async function fetchApi(endpoint, options = {}) {
   const token = localStorage.getItem('accessToken');
   
@@ -48,7 +48,8 @@ export async function fetchApi(endpoint, options = {}) {
 
 async function refreshAccessToken() {
   try {
-  const response = await fetch(`${BASE_URL}/api/auth/refresh`, { method: 'POST' });
+    const BASE_URL = import.meta.env.VITE_API_URL || 'https://finance-a6j5.onrender.com';
+    const response = await fetch(`${BASE_URL}/api/auth/refresh`, { method: 'POST' });
     const data = await response.json();
     if (data.success && data.data.accessToken) {
       localStorage.setItem('accessToken', data.data.accessToken);
