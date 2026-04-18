@@ -8,6 +8,9 @@ const config = require('./env');
 
 const pool = new Pool({
   connectionString: config.databaseUrl,
+  ssl: {
+    rejectUnauthorized: false  // ✅ Must add this for Render
+  },
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,

@@ -1,5 +1,6 @@
 {
   "name": "personal-finance-frontend",
+    "proxy": "https://finance-a6j5.onrender.com",
   "private": true,
   "version": "1.0.0",
   "type": "module",

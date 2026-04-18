@@ -6,7 +6,12 @@
 const app = require('./app');
 const config = require('./config/env');
 const db = require('./config/db');
+const cors = require('cors');
 
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
 async function start() {
   // Verify DB connection
   try {
