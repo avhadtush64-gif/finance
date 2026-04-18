@@ -1,15 +1,9 @@
-/**
- * @module models/migrate
- * @description Creates all database tables. Run: node src/models/migrate.js
- */
-
 const db = require('../config/db');
 
 const UP = `
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ENUM types
 DO $$ BEGIN
   CREATE TYPE transaction_type AS ENUM ('income', 'expense');
 EXCEPTION WHEN duplicate_object THEN NULL;
@@ -20,29 +14,22 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- ============================================================
--- USERS
--- ============================================================
 CREATE TABLE IF NOT EXISTS users (
   id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name           VARCHAR(255) NOT NULL,
   email          VARCHAR(255) UNIQUE NOT NULL,
-  password_hash  VARCHAR(255),                       -- nullable for OAuth users
-  google_id      VARCHAR(255) UNIQUE,                -- nullable for email/pw users
+  password_hash  VARCHAR(255),
+  google_id      VARCHAR(255) UNIQUE,
   avatar_url     TEXT,
   preferred_currency VARCHAR(3) NOT NULL DEFAULT 'USD',
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 
--- ============================================================
--- CATEGORIES
--- ============================================================
 CREATE TABLE IF NOT EXISTS categories (
   id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id   UUID REFERENCES users(id) ON DELETE CASCADE,   -- NULL = system default
+  user_id   UUID REFERENCES users(id) ON DELETE CASCADE,
   name      VARCHAR(100) NOT NULL,
   type      transaction_type NOT NULL,
   color     VARCHAR(7) DEFAULT '#BDC3C7',
@@ -50,12 +37,8 @@ CREATE TABLE IF NOT EXISTS categories (
   is_system BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_categories_user ON categories (user_id);
 
--- ============================================================
--- TRANSACTIONS
--- ============================================================
 CREATE TABLE IF NOT EXISTS transactions (
   id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -72,15 +55,11 @@ CREATE TABLE IF NOT EXISTS transactions (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_txn_user     ON transactions (user_id);
 CREATE INDEX IF NOT EXISTS idx_txn_date     ON transactions (user_id, date);
 CREATE INDEX IF NOT EXISTS idx_txn_category ON transactions (user_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_txn_type     ON transactions (user_id, type);
 
--- ============================================================
--- BUDGETS
--- ============================================================
 CREATE TABLE IF NOT EXISTS budgets (
   id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -93,12 +72,8 @@ CREATE TABLE IF NOT EXISTS budgets (
   notify_at_percent INTEGER NOT NULL DEFAULT 80,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_budgets_user ON budgets (user_id);
 
--- ============================================================
--- INCOME SOURCES
--- ============================================================
 CREATE TABLE IF NOT EXISTS income_sources (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -106,12 +81,8 @@ CREATE TABLE IF NOT EXISTS income_sources (
   description TEXT DEFAULT '',
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_income_src_user ON income_sources (user_id);
 
--- ============================================================
--- NOTIFICATIONS LOG
--- ============================================================
 CREATE TABLE IF NOT EXISTS notifications_log (
   id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -119,21 +90,24 @@ CREATE TABLE IF NOT EXISTS notifications_log (
   message  TEXT NOT NULL,
   sent_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications_log (user_id);
 `;
 
+// ✅ Export as function (no pool.end!)
 async function migrate() {
   console.log('🔄  Running migrations …');
-  try {
-    await db.query(UP);
-    console.log('✅  All tables created successfully.');
-  } catch (err) {
-    console.error('❌  Migration failed:', err.message);
-    process.exit(1);
-  } finally {
-    await db.pool.end();
-  }
+  await db.query(UP);
+  console.log('✅  All tables created successfully.');
 }
 
-migrate();
+// ✅ Allow running directly too: node src/models/migrate.js
+if (require.main === module) {
+  migrate()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('❌  Migration failed:', err.message);
+      process.exit(1);
+    });
+}
+
+module.exports = migrate;

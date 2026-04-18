@@ -1,22 +1,7 @@
-/**
- * @module server
- * @description Application entry point — starts the HTTP server.
- */
-
 const app = require('./app');
 const config = require('./config/env');
 const db = require('./config/db');
-const cors = require('cors');
 
-app.use(cors({
-  origin: [
-    'https://finance-1-fg8u.onrender.com',  // your frontend URL
-    'http://localhost:3000'                   // local dev
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 async function start() {
   // Verify DB connection
   try {
@@ -24,8 +9,24 @@ async function start() {
     console.log('✅  Connected to PostgreSQL');
   } catch (err) {
     console.error('❌  Cannot connect to PostgreSQL:', err.message);
-    console.error('   Make sure your DATABASE_URL is correct and the DB is running.');
     process.exit(1);
+  }
+
+  // ✅ Auto-run migrations
+  try {
+    const migrate = require('./models/migrate');
+    await migrate();
+  } catch (err) {
+    console.error('❌  Migration error:', err.message);
+    process.exit(1);
+  }
+
+  // ✅ Auto-run seed
+  try {
+    const seed = require('./models/seed');
+    await seed();
+  } catch (err) {
+    console.error('❌  Seed error:', err.message);
   }
 
   app.listen(config.port, () => {
